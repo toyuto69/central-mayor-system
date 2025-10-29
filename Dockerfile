@@ -25,19 +25,25 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 RUN cp .env.example .env || true
 RUN php artisan key:generate --force
 
-# CREAR BASE DE DATOS SQLITE
-RUN mkdir -p database
-RUN touch database/database.sqlite
+# CREAR BASE DE DATOS
+RUN mkdir -p database && touch database/database.sqlite
 RUN chown -R www-data:www-data database/database.sqlite
 
 # PERMISOS
 RUN chown -R www-data:www-data storage bootstrap/cache database
 RUN chmod -R 775 storage bootstrap/cache database
 
-# Apache config
+# Apache: Apuntar a /public
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Habilitar .htaccess
+RUN echo "<Directory ${APACHE_DOCUMENT_ROOT}>\n\
+    AllowOverride All\n\
+    Require all granted\n\
+</Directory>" > /etc/apache2/conf-available/laravel.conf
+RUN a2enconf laravel
 
 EXPOSE 80
 
