@@ -1,4 +1,4 @@
-import axios from 'axios';
-window.axios = axios;
+// resources/js/bootstrap.js
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+console.log('Bootstrap cargado correctamente');
