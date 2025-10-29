@@ -1,50 +1,46 @@
 FROM php:8.2-apache
 
-# Instalar dependencias
+# Dependencias
 RUN apt-get update && apt-get install -y \
     libpng-dev libjpeg-dev libfreetype6-dev zip unzip git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql \
     && a2enmod rewrite
 
-# Copiar código
 WORKDIR /var/www/html
 COPY . .
 
-# Instalar Composer
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --optimize-autoloader --no-dev --no-interaction
 
-# Node.js para Vite
+# Node.js + Vite
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && npm install \
     && npm run build
 
-# CREAR .env
-RUN cp .env.example .env || true
+# .env y APP_KEY
+RUN cp .env.example .env
 RUN php artisan key:generate --force
 
-# CREAR BASE DE DATOS
+# BASE DE DATOS
 RUN mkdir -p database && touch database/database.sqlite
-RUN chown -R www-data:www-data database/database.sqlite
+RUN chown www-data:www-data database/database.sqlite
 
-# PERMISOS
+# PERMISOS COMPLETOS (ESTO ES LO QUE FALTABA)
+RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache
 RUN chown -R www-data:www-data storage bootstrap/cache database
-RUN chmod -R 775 storage bootstrap/cache database
+RUN chmod -R 777 storage bootstrap/cache database
 
-# CREAR CARPETA DE LOGS Y PERMISOS
-RUN mkdir -p storage/logs
-RUN touch storage/logs/laravel.log
-RUN chown -R www-data:www-data storage/logs
-RUN chmod -R 775 storage/logs
+# MIGRACIONES
+RUN php artisan migrate --force
 
-# Apache: Apuntar a /public
+# Apache
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Habilitar .htaccess
 RUN echo "<Directory ${APACHE_DOCUMENT_ROOT}>\n\
     AllowOverride All\n\
     Require all granted\n\
