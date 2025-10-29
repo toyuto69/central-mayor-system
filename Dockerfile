@@ -2,12 +2,7 @@ FROM php:8.2-apache
 
 # Instalar dependencias
 RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    zip \
-    unzip \
-    git \
+    libpng-dev libjpeg-dev libfreetype6-dev zip unzip git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql \
     && a2enmod rewrite
@@ -18,7 +13,7 @@ COPY . .
 
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN composer install --optimize-autoloader --no-dev
+RUN composer install --optimize-autoloader --no-dev --no-interaction
 
 # Node.js para Vite
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -26,12 +21,13 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && npm install \
     && npm run build
 
-# Permisos de storage y cache
-RUN chmod -R 775 storage bootstrap/cache
-RUN chown -R www-data:www-data storage bootstrap/cache
+# CREAR .env EN PRODUCCIÓN
+RUN cp .env.example .env || true
+RUN php artisan key:generate --force
 
-# Permisos
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# PERMISOS
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
+RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Apache config
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
