@@ -33,6 +33,12 @@ RUN chown -R www-data:www-data database/database.sqlite
 RUN chown -R www-data:www-data storage bootstrap/cache database
 RUN chmod -R 775 storage bootstrap/cache database
 
+# CREAR CARPETA DE LOGS Y PERMISOS
+RUN mkdir -p storage/logs
+RUN touch storage/logs/laravel.log
+RUN chown -R www-data:www-data storage/logs
+RUN chmod -R 775 storage/logs
+
 # Apache: Apuntar a /public
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
