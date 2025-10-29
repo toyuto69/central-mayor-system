@@ -21,13 +21,22 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && npm install \
     && npm run build
 
-# CREAR .env EN PRODUCCIÓN
-RUN cp .env.example .env || true
-RUN php artisan key:generate --force
+# CREAR .env Y CONFIGURAR
+RUN cp .env.example .env
+RUN sed -i 's|APP_KEY=.*|APP_KEY=base64:'"$(php artisan key:generate --show --no-ansi)"'|g' .env
+RUN sed -i 's|APP_URL=.*|APP_URL='"${RENDER_EXTERNAL_URL:-http://localhost:8000}"'|g' .env
+RUN sed -i 's|DB_DATABASE=.*|DB_DATABASE=/app/database/database.sqlite|g' .env
+
+# CACHE Y MIGRACIONES
+RUN php artisan config:cache
+RUN php artisan route:cache
+RUN php artisan view:cache
+RUN mkdir -p database && touch database/database.sqlite
+RUN php artisan migrate --force
 
 # PERMISOS
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
-RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html
+RUN chmod -R 775 storage bootstrap/cache database
 
 # Apache config
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
