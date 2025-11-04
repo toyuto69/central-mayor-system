@@ -1,15 +1,5 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.php",
-      "use": "@vercel/php"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.php"
-    }
-  ]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "source": "/feedback/((?!general).*)",
+  "destination": "/api/feedback/general"
 }
